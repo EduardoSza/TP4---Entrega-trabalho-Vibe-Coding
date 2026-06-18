@@ -1,0 +1,20 @@
+{
+  "name": "meu-app",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:server": "npm run dev -w packages/server",
+    "dev:web": "npm run dev -w packages/web",
+    "build": "npm run build -w packages/server && npm run build -w packages/web",
+    "lint": "npm run lint -w packages/server && npm run lint -w packages/web",
+    "typecheck": "npm run typecheck -w packages/server && npm run typecheck -w packages/web",
+    "db:generate": "npm run db:generate -w packages/server",
+    "db:push": "npm run db:push -w packages/server",
+    "db:seed": "npm run db:seed -w packages/server",
+    "setup": "npm install && npm run db:generate && npm run db:push && npm run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

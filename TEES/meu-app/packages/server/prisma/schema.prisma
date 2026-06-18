@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADVISOR
+  SUPERVISOR
+  ADMIN
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  DEADLINE
+  MESSAGE
+  APPROVAL
+  PENDENCY
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student       Student?
+  advisorStudents Student[] @relation("AdvisorStudents")
+  notifications Notification[]
+  sentMessages  Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+
+  @@map("users")
+}
+
+model Student {
+  id                 String   @id @default(cuid())
+  registrationNumber String   @unique @map("registration_number")
+  course             String
+  totalHours         Int      @default(0) @map("total_hours")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  userId    String  @unique @map("user_id")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String? @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  advisorId String? @map("advisor_id")
+  advisor   User?   @relation("AdvisorStudents", fields: [advisorId], references: [id], onDelete: SetNull)
+
+  documents Document[]
+  reports   Report[]
+
+  @@map("students")
+}
+
+model Company {
+  id             String   @id @default(cuid())
+  name           String
+  cnpj           String   @unique
+  address        String?
+  phone          String?
+  supervisorName String?  @map("supervisor_name")
+  supervisorEmail String? @map("supervisor_email")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  students Student[]
+
+  @@map("companies")
+}
+
+model Document {
+  id        String         @id @default(cuid())
+  category  String
+  fileUrl   String         @map("file_url")
+  fileName  String         @map("file_name")
+  status    DocumentStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  studentId String @map("student_id")
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+  fileUrl     String   @map("file_url")
+  fileName    String   @map("file_name")
+  type        String
+  status      DocumentStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  studentId String @map("student_id")
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType @default(DEADLINE)
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  senderId   String @map("sender_id")
+  sender     User   @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String @map("receiver_id")
+  receiver   User   @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
